@@ -76,7 +76,13 @@ void struct_processor::process(ea_t addr) {
 				qstring operand_text;
 				print_operand(&operand_text, insn.ea, i);
 				if (regex_match(operand_text.c_str(), this->target_reg.c_str(), false) != 1) { continue; }
+		if (insn.get_canon_feature() & CF_STOP) {
+			if (branch_target(insn) != BADADDR) {
+				this->process(branch_target(insn));
+				cmt(insn, " branched from here");
 			}
+			cmt(insn, "CF_STOP");
+			return;
 		}
 		if (did_register_spoil(insn)) {
 			cmt(insn, "detected spoil");
