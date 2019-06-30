@@ -167,7 +167,6 @@
     <ClCompile Include="struct_processor.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Registers.h" />
     <ClInclude Include="struct_processor.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
