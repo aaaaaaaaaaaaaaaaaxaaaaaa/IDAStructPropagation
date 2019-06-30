@@ -15,7 +15,7 @@
 class struct_processor
 {
 public:
-	struct_processor(ea_t);
+	struct_processor(ea_t, struc_t*);
 
 private:
 	ea_t starting_addr;

@@ -1,11 +1,10 @@
 #include "struct_processor.h"
 
-struct_processor::struct_processor(ea_t starting_addr) : starting_addr(starting_addr) {
+struct_processor::struct_processor(ea_t starting_addr, struc_t* struc) : starting_addr(starting_addr), struc(struc) {
 	this->target_reg = get_reg_highlight();
-	this->struc = choose_struc("Select struct");
 	this->func = get_func(starting_addr);
-	this->process(starting_addr);
 	this->processed_lines = 0;
+	this->process(starting_addr);
 }
 
 qstring struct_processor::get_reg_highlight() {

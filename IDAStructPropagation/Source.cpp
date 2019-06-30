@@ -30,7 +30,9 @@ void idaapi term(void)
 
 bool idaapi run(size_t arg)
 {
-	struct_processor processor(get_screen_ea());
+	struc_t* struc = choose_struc("Select struct");
+	if (struc == NULL) { return true; }
+	struct_processor processor(get_screen_ea(), struc);
 	return true;
 }	
 
