@@ -28,5 +28,6 @@ private:
 	void process(ea_t addr);
 	bool did_register_spoil(insn_t);
 	uint16 get_reg_num(qstring);
+	ea_t branch_target(insn_t);
 };
 

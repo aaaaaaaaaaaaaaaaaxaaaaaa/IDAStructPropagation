@@ -42,8 +42,9 @@ uint16 struct_processor::get_reg_num(qstring target_reg) {
 	throw "couldnt do struct_processor::get_reg_num()";
 }
 
-ea_t branch_target(insn_t insn) {
-	return get_first_fcref_from(insn.ea);
+ea_t struct_processor::branch_target(insn_t insn) {
+	ea_t branch_target = get_first_fcref_from(insn.ea);
+	return this->func->contains(branch_target) ? branch_target : BADADDR;
 }
 
 void cmt(insn_t insn, qstring text) {
