@@ -23,6 +23,7 @@ private:
 	std::set<ea_t> visited;
 	struc_t* struc;
 	func_t* func;
+	uint processed_lines;
 
 	qstring get_reg_highlight();
 	void process(ea_t addr);

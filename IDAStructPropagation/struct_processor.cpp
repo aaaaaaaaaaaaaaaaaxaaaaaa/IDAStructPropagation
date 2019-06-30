@@ -5,6 +5,7 @@ struct_processor::struct_processor(ea_t starting_addr) : starting_addr(starting_
 	this->struc = choose_struc("Select struct");
 	this->func = get_func(starting_addr);
 	this->process(starting_addr);
+	this->processed_lines = 0;
 }
 
 qstring struct_processor::get_reg_highlight() {
@@ -63,6 +64,7 @@ void struct_processor::process(ea_t addr) {
 	while (func_contains(this->func, insn.ea)) {
 		if (this->visited.find(insn.ea) != this->visited.end()) { return; }
 		this->visited.insert(insn.ea);
+		this->processed_lines++;
 
 		if (branch_target(insn) != BADADDR) {
 			this->process(branch_target(insn));
@@ -91,7 +93,7 @@ void struct_processor::process(ea_t addr) {
 			cmt(insn, "CF_STOP");
 			return;
 		}
-		if (did_register_spoil(insn)) {
+		if (did_register_spoil(insn) && this->processed_lines > 1) {
 			cmt(insn, "detected spoil");
 			return;
 		}
