@@ -38,7 +38,7 @@ bool idaapi run(size_t arg)
 static const char comment[] = "Auto struct propagate";
 static const char help[] = "";
 static const char wanted_name[] = "Auto struct propagate";
-static const char wanted_hotkey[] = "";
+static const char wanted_hotkey[] = "shift+t";
 plugin_t PLUGIN =
 {
   IDP_INTERFACE_VERSION,
