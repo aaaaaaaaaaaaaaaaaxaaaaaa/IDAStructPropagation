@@ -48,19 +48,11 @@ ea_t struct_processor::branch_target(insn_t insn) {
 	return this->func->contains(branch_target) ? branch_target : BADADDR;
 }
 
-void cmt(insn_t insn, qstring text) {
-	qstring cmt;
-	get_cmt(&cmt, insn.ea, false);
-	char new_cmt[256];
-	qsnprintf(new_cmt, 256, "%s - %s", cmt.c_str(), text.c_str());
-	set_cmt(insn.ea, new_cmt, false);
-}
-
 void struct_processor::process(ea_t addr) {
 	insn_t insn;
 	ea_t decoded_addr;
 	decoded_addr = decode_insn(&insn, addr);
-	cmt(insn, "[ENTRY]");
+
 	while (func_contains(this->func, insn.ea)) {
 		if (this->visited.find(insn.ea) != this->visited.end()) { return; }
 		this->visited.insert(insn.ea);
@@ -72,7 +64,6 @@ void struct_processor::process(ea_t addr) {
 			this->process(insn.ea); // process FALSE branch
 			return;
 		}
-		cmt(insn, "processed line");
 
 		for (int i = 0; i < UA_MAXOP; i++) {
 			op_t op = insn.ops[i];
@@ -81,20 +72,16 @@ void struct_processor::process(ea_t addr) {
 				qstring operand_text;
 				print_operand(&operand_text, insn.ea, i);
 				if (regex_match(operand_text.c_str(), this->target_reg.c_str(), false) != 1) { continue; }
-				cmt(insn, "found matching");
 				op_stroff(insn, i, &this->struc->id, 1, 0);
 			}
 		}
 		if (insn.get_canon_feature() & CF_STOP) {
 			if (branch_target(insn) != BADADDR) {
 				this->process(branch_target(insn));
-				cmt(insn, " branched from here");
 			}
-			cmt(insn, "CF_STOP");
 			return;
 		}
 		if (did_register_spoil(insn) && this->processed_lines > 1) {
-			cmt(insn, "detected spoil");
 			return;
 		}
 		decoded_addr = decode_insn(&insn, insn.ea + insn.size);
