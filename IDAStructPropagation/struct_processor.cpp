@@ -42,14 +42,10 @@ uint16 struct_processor::get_reg_num(qstring target_reg) {
 	throw "couldnt do struct_processor::get_reg_num()";
 }
 
-bool should_branch(insn_t insn) {
-	ea_t target = get_first_dref_from(insn.ea);
-	uint32 flags = insn.get_canon_feature();
-	if (target != BADADDR && (flags & CF_STOP) == 0) {  // 
-
-	}
-	return false;
+ea_t branch_target(insn_t insn) {
+	return get_first_fcref_from(insn.ea);
 }
+
 void cmt(insn_t insn, qstring text) {
 	qstring cmt;
 	get_cmt(&cmt, insn.ea, false);
@@ -64,6 +60,12 @@ void struct_processor::process(ea_t addr) {
 	decoded_addr = decode_insn(&insn, addr);
 	cmt(insn, "[ENTRY]");
 	while (func_contains(this->func, insn.ea)) {
+		if (branch_target(insn) != BADADDR) {
+			this->process(branch_target(insn));
+			cmt(insn, " - branched from here");
+			decoded_addr = decode_insn(&insn, insn.ea + insn.size);
+			continue;
+		}
 		for (int i = 0; i < UA_MAXOP; i++) {
 			op_t op = insn.ops[i];
 			if (op.type == o_void) { break; }
