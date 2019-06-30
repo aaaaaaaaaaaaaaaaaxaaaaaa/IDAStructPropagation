@@ -60,6 +60,9 @@ void struct_processor::process(ea_t addr) {
 	decoded_addr = decode_insn(&insn, addr);
 	cmt(insn, "[ENTRY]");
 	while (func_contains(this->func, insn.ea)) {
+		if (this->visited.find(insn.ea) != this->visited.end()) { return; }
+		this->visited.insert(insn.ea);
+
 		if (branch_target(insn) != BADADDR) {
 			this->process(branch_target(insn));
 			cmt(insn, " - branched from here");
