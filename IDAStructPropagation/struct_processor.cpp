@@ -67,10 +67,10 @@ void struct_processor::process(ea_t addr) {
 		this->processed_lines++;
 
 		if (branch_target(insn) != BADADDR) {
-			this->process(branch_target(insn));
-			cmt(insn, " - branched from here");
+			this->process(branch_target(insn)); // Insn is a Jcc type, process TRUE branch
 			decoded_addr = decode_insn(&insn, insn.ea + insn.size);
-			continue;
+			this->process(insn.ea); // process FALSE branch
+			return;
 		}
 		cmt(insn, "processed line");
 
