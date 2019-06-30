@@ -50,11 +50,19 @@ bool should_branch(insn_t insn) {
 	}
 	return false;
 }
+void cmt(insn_t insn, qstring text) {
+	qstring cmt;
+	get_cmt(&cmt, insn.ea, false);
+	char new_cmt[256];
+	qsnprintf(new_cmt, 256, "%s - %s", cmt, text);
+	set_cmt(insn.ea, new_cmt, false);
+}
 
 void struct_processor::process(ea_t addr) {
 	insn_t insn;
 	ea_t decoded_addr;
 	decoded_addr = decode_insn(&insn, addr);
+	cmt(insn, "[ENTRY]");
 	while (func_contains(this->func, insn.ea)) {
 		for (int i = 0; i < UA_MAXOP; i++) {
 			op_t op = insn.ops[i];
@@ -66,6 +74,7 @@ void struct_processor::process(ea_t addr) {
 			}
 		}
 		if (did_register_spoil(insn)) {
+			cmt(insn, "detected spoil");
 			return;
 		}
 		decoded_addr = decode_insn(&insn, insn.ea + insn.size);
