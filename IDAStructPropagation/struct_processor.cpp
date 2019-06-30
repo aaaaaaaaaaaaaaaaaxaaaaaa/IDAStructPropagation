@@ -50,7 +50,7 @@ void cmt(insn_t insn, qstring text) {
 	qstring cmt;
 	get_cmt(&cmt, insn.ea, false);
 	char new_cmt[256];
-	qsnprintf(new_cmt, 256, "%s - %s", cmt, text);
+	qsnprintf(new_cmt, 256, "%s - %s", cmt.c_str(), text.c_str());
 	set_cmt(insn.ea, new_cmt, false);
 }
 
