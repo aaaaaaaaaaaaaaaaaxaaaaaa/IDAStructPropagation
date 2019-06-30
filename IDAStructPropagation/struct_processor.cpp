@@ -69,6 +69,8 @@ void struct_processor::process(ea_t addr) {
 			decoded_addr = decode_insn(&insn, insn.ea + insn.size);
 			continue;
 		}
+		cmt(insn, "processed line");
+
 		for (int i = 0; i < UA_MAXOP; i++) {
 			op_t op = insn.ops[i];
 			if (op.type == o_void) { break; }
@@ -76,6 +78,10 @@ void struct_processor::process(ea_t addr) {
 				qstring operand_text;
 				print_operand(&operand_text, insn.ea, i);
 				if (regex_match(operand_text.c_str(), this->target_reg.c_str(), false) != 1) { continue; }
+				cmt(insn, "found matching");
+				op_stroff(insn, i, &this->struc->id, 1, 0);
+			}
+		}
 		if (insn.get_canon_feature() & CF_STOP) {
 			if (branch_target(insn) != BADADDR) {
 				this->process(branch_target(insn));
