@@ -98,8 +98,10 @@ void struct_processor::process(ea_t addr, std::set<uint16> monitored_registers) 
 			op_t op = insn.ops[i];
 			if (op.type == o_void) { break; }
 			if (op.type == o_displ || op.type == o_phrase) {
-				if (monitored_registers.find(op.reg) == monitored_registers.end()) { continue; }
-				op_stroff(insn, i, &this->struc->id, 1, 0);
+				uint16 reg = op.specflag2 ? sib_base(insn, op) : op.reg;
+				if (monitored_registers.find(reg) != monitored_registers.end()) {
+					op_stroff(insn, i, &this->struc->id, 1, 0);
+				}
 			}
 		}
 		if (!bypass_spoil) {

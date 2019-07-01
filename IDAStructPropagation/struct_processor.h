@@ -9,6 +9,7 @@
 #include <frame.hpp>
 #include <struct.hpp>
 #include <name.hpp>
+#include <intel.hpp>
 #include <cstdio>
 #include <set>
 #pragma warning(pop)
