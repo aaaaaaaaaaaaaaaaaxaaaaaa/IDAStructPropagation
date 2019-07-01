@@ -26,9 +26,9 @@ private:
 	uint processed_lines;
 
 	qstring get_reg_highlight();
-	void process(ea_t addr);
-	bool did_register_spoil(insn_t);
-	uint16 get_reg_num(qstring);
+	void process(ea_t addr, std::set<uint16>);
+	uint16 did_register_spoil(insn_t, std::set<uint16>);
+	uint16 get_reg_num(qstring, insn_t);
 	ea_t branch_target(insn_t);
 };
 
