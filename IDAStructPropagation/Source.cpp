@@ -16,10 +16,8 @@
 int idaapi init(void)
 {
 	if (stricmp(inf.procname, "metapc") != 0) {
-		msg("skipped idastructpropagation");
 		return PLUGIN_SKIP;
 	}
-	msg("running idastructpropagation");
 	return PLUGIN_OK;
 }
 
