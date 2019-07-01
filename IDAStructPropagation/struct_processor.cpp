@@ -62,11 +62,14 @@ uint16 struct_processor::check_for_struc_transfer(insn_t insn, std::set<uint16> 
 	// Assumptions:
 	// 1. ops[0] is destination, ops[1] is the source
 	// 2. Horizontal transfer of a structure pointer can only happen if both operands are o_reg
+	// 3. An instruction that performs o_reg, o_reg where both o_reg's are the same register is not meaningful (likely xor or nop)
 	if (insn.ops[0].type != o_reg || insn.ops[1].type != o_reg) { return UINT16_MAX; }
 	if (set.find(insn.ops[1].reg) == set.end()) { return UINT16_MAX; }
+	if (insn.ops[0].reg == insn.ops[1].reg) { return UINT16_MAX; }
 
 	return insn.ops[0].reg;
 }
+
 void struct_processor::process(ea_t addr, std::set<uint16> monitored_registers) {
 	insn_t insn;
 	ea_t decoded_addr;
