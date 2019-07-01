@@ -25,6 +25,7 @@ qstring struct_processor::get_reg_highlight() {
 	return highlight;
 }
 
+/// Check an instruction and see if it causes a monitored register to be spoiled
 uint16 struct_processor::did_register_spoil(insn_t insn, std::set<uint16> monitored_registers) {
 	// Assumptions:
 	// 1. A register will only be spoiled happen when that register is the first operand as an o_reg.
@@ -55,6 +56,17 @@ ea_t struct_processor::branch_target(insn_t insn) {
 	return this->func->contains(branch_target) ? branch_target : BADADDR;
 }
 
+/// Check if an instruction is moving a structure pointer into another register. 
+/// Return the new register if it is, UINT16_MAX otherwise.
+uint16 struct_processor::check_for_struc_transfer(insn_t insn, std::set<uint16> set) {
+	// Assumptions:
+	// 1. ops[0] is destination, ops[1] is the source
+	// 2. Horizontal transfer of a structure pointer can only happen if both operands are o_reg
+	if (insn.ops[0].type != o_reg || insn.ops[1].type != o_reg) { return UINT16_MAX; }
+	if (set.find(insn.ops[1].reg) == set.end()) { return UINT16_MAX; }
+
+	return insn.ops[0].reg;
+}
 void struct_processor::process(ea_t addr, std::set<uint16> monitored_registers) {
 	insn_t insn;
 	ea_t decoded_addr;
@@ -65,6 +77,10 @@ void struct_processor::process(ea_t addr, std::set<uint16> monitored_registers) 
 		this->visited.insert(insn.ea);
 		this->processed_lines++;
 
+		uint16 new_register = check_for_struc_transfer(insn, monitored_registers);
+		if (new_register != UINT16_MAX) {
+			monitored_registers.insert(new_register);
+		}
 		if (branch_target(insn) != BADADDR) {
 			this->process(branch_target(insn), monitored_registers); // Insn is a Jcc type, process TRUE branch
 			decoded_addr = decode_insn(&insn, insn.ea + insn.size);
@@ -76,9 +92,7 @@ void struct_processor::process(ea_t addr, std::set<uint16> monitored_registers) 
 			op_t op = insn.ops[i];
 			if (op.type == o_void) { break; }
 			if (op.type == o_displ || op.type == o_phrase) {
-				qstring operand_text;
-				print_operand(&operand_text, insn.ea, i);
-				if (regex_match(operand_text.c_str(), this->target_reg.c_str(), false) != 1) { continue; }
+				if (monitored_registers.find(op.reg) == monitored_registers.end()) { continue; }
 				op_stroff(insn, i, &this->struc->id, 1, 0);
 			}
 		}

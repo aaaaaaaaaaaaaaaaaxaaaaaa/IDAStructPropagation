@@ -30,5 +30,6 @@ private:
 	uint16 did_register_spoil(insn_t, std::set<uint16>);
 	uint16 get_reg_num(qstring, insn_t);
 	ea_t branch_target(insn_t);
+	uint16 check_for_struc_transfer(insn_t, std::set<uint16>);
 };
 
