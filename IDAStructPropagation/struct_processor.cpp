@@ -79,11 +79,14 @@ void struct_processor::process(ea_t addr, std::set<uint16> monitored_registers) 
 		if (this->visited.find(insn.ea) != this->visited.end()) { return; }
 		this->visited.insert(insn.ea);
 		this->processed_lines++;
+		bool bypass_spoil = false;
 
 		uint16 new_register = check_for_struc_transfer(insn, monitored_registers);
 		if (new_register != UINT16_MAX) {
 			monitored_registers.insert(new_register);
+			bypass_spoil = true;
 		}
+
 		if (branch_target(insn) != BADADDR) {
 			this->process(branch_target(insn), monitored_registers); // Insn is a Jcc type, process TRUE branch
 			decoded_addr = decode_insn(&insn, insn.ea + insn.size);
@@ -99,15 +102,17 @@ void struct_processor::process(ea_t addr, std::set<uint16> monitored_registers) 
 				op_stroff(insn, i, &this->struc->id, 1, 0);
 			}
 		}
-		if (insn.get_canon_feature() & CF_STOP) {
-			if (branch_target(insn) != BADADDR) {
-				this->process(branch_target(insn), monitored_registers);
+		if (!bypass_spoil) {
+			if (insn.get_canon_feature() & CF_STOP) {
+				if (branch_target(insn) != BADADDR) {
+					this->process(branch_target(insn), monitored_registers);
+				}
+				return;
 			}
-			return;
-		}
-		uint16 spoiled_register = this->did_register_spoil(insn, monitored_registers);
-		if ((spoiled_register != UINT16_MAX) && this->processed_lines > 1) {
-			monitored_registers.erase(spoiled_register);
+			uint16 spoiled_register = this->did_register_spoil(insn, monitored_registers);
+			if ((spoiled_register != UINT16_MAX) && this->processed_lines > 1) {
+				monitored_registers.erase(spoiled_register);
+			}
 		}
 		decoded_addr = decode_insn(&insn, insn.ea + insn.size);
 	}
