@@ -8,8 +8,9 @@ struct_processor::struct_processor(ea_t starting_addr, struc_t* struc) : startin
 	insn_t starting_insn;
 	decode_insn(&starting_insn, starting_addr);
 	std::set<uint16> monitored_registers;
+	std::set<ea_t> visited;
 	monitored_registers.insert(this->get_reg_num(this->target_reg, starting_insn));
-	this->process(starting_addr, monitored_registers);
+	this->process(starting_addr, monitored_registers, visited);
 }
 
 qstring struct_processor::get_reg_highlight() {
@@ -79,14 +80,14 @@ bool struct_processor::check_for_add(insn_t insn, std::set<uint16> set) {
 	return true;
 }
 
-void struct_processor::process(ea_t addr, std::set<uint16> monitored_registers) {
+void struct_processor::process(ea_t addr, std::set<uint16> monitored_registers, std::set<ea_t> visited) {
 	insn_t insn;
 	ea_t decoded_addr;
 	decoded_addr = decode_insn(&insn, addr);
 
 	while (func_contains(this->func, insn.ea) && monitored_registers.size() > 0) {
-		if (this->visited.find(insn.ea) != this->visited.end()) { return; }
-		this->visited.insert(insn.ea);
+		if (visited.find(insn.ea) != visited.end()) { return; }
+		visited.insert(insn.ea);
 		this->processed_lines++;
 		bool bypass_spoil = false;
 
@@ -97,9 +98,9 @@ void struct_processor::process(ea_t addr, std::set<uint16> monitored_registers) 
 		}
 
 		if (branch_target(insn) != BADADDR) {
-			this->process(branch_target(insn), monitored_registers); // Insn is a Jcc type, process TRUE branch
+			this->process(branch_target(insn), monitored_registers, visited); // Insn is a Jcc type, process TRUE branch
 			decoded_addr = decode_insn(&insn, insn.ea + insn.size);
-			this->process(insn.ea, monitored_registers); // process FALSE branch
+			this->process(insn.ea, monitored_registers, visited); // process FALSE branch
 			return;
 		}
 
@@ -121,7 +122,7 @@ void struct_processor::process(ea_t addr, std::set<uint16> monitored_registers) 
 		if (!bypass_spoil) {
 			if (insn.get_canon_feature() & CF_STOP) {
 				if (branch_target(insn) != BADADDR) {
-					this->process(branch_target(insn), monitored_registers);
+					this->process(branch_target(insn), monitored_registers, visited);
 				}
 				return;
 			}
