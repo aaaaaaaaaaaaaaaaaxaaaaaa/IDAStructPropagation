@@ -70,6 +70,15 @@ uint16 struct_processor::check_for_struc_transfer(insn_t insn, std::set<uint16> 
 	return insn.ops[0].reg;
 }
 
+bool struct_processor::check_for_add(insn_t insn, std::set<uint16> set) {
+	qstring mnem;
+	print_insn_mnem(&mnem, insn.ea);
+	if (mnem != "add") { return false; }
+	if (set.find(insn.ops[0].reg) == set.end()) { return false; }
+
+	return true;
+}
+
 void struct_processor::process(ea_t addr, std::set<uint16> monitored_registers) {
 	insn_t insn;
 	ea_t decoded_addr;
@@ -104,6 +113,11 @@ void struct_processor::process(ea_t addr, std::set<uint16> monitored_registers) 
 				}
 			}
 		}
+
+		if (check_for_add(insn, monitored_registers)) {
+			op_stroff(insn, 1, &this->struc->id, 1, 0);
+		}
+
 		if (!bypass_spoil) {
 			if (insn.get_canon_feature() & CF_STOP) {
 				if (branch_target(insn) != BADADDR) {
