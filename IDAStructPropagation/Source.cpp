@@ -13,41 +13,68 @@
 #pragma warning(pop)
 #include "struct_processor.h"
 
+class process_action : public action_handler_t {
+	int (*func)(action_activation_ctx_t* ctx);
+public:
+
+	process_action(int (*func)(action_activation_ctx_t*)) : func(func) {
+
+	}
+
+	int idaapi activate(action_activation_ctx_t* ctx) {
+		return func(ctx);
+	}
+
+	action_state_t idaapi update(action_update_ctx_t* ctx) {
+		return AST_ENABLE_ALWAYS;
+	}
+};
+
+// Shift + T action
 struc_t* selectedStruct = 0;
-void propagate_offsets(ea_t ea, uint8 op) {
+void propagate_callback(ea_t ea, uint8 op) {
 	insn_t insn;
 	decode_insn(&insn, ea);
 	op_stroff(insn, op, &selectedStruct->id, 1, 0);
 }
+int propagate_action(action_activation_ctx_t* ctx) {
+	msg("propagate_action\n");
+	struc_t* struc = choose_struc("Select struct");
+	if (struc == NULL) { return true; }
+	selectedStruct = struc;
+	struct_processor processor(get_screen_ea(), &propagate_callback);
+	selectedStruct = 0;
+	return 1;
+}
+process_action propagate_action_handler = process_action(&propagate_action);
+action_desc_t propagate_action_desc = ACTION_DESC_LITERAL("lyxica:propagateoffsets", "Auto struct propagate", &propagate_action_handler, "shift+t", NULL, NULL);
 
 int idaapi init(void)
 {
 	if (stricmp(inf.procname, "metapc") != 0) {
 		return PLUGIN_SKIP;
 	}
-	return PLUGIN_OK;
+
+	register_action(propagate_action_desc);
+	return PLUGIN_KEEP;
 }
 void idaapi term(void)
 {
+	unregister_action("lyxica:propagateoffsets");
 }
 bool idaapi run(size_t arg)
 {
-	struc_t* struc = choose_struc("Select struct");
-	if (struc == NULL) { return true; }
-	selectedStruct = struc;
-	struct_processor processor(get_screen_ea(), &propagate_offsets);
-	selectedStruct = 0;
 	return true;
 }	
 //--------------------------------------------------------------------------
-static const char comment[] = "Auto struct propagate";
+static const char comment[] = "";
 static const char help[] = "";
-static const char wanted_name[] = "Auto struct propagate";
-static const char wanted_hotkey[] = "shift+t";
+static const char wanted_name[] = "";
+static const char wanted_hotkey[] = "";
 plugin_t PLUGIN =
 {
   IDP_INTERFACE_VERSION,
-  PLUGIN_UNL,           // plugin flags
+  PLUGIN_PROC | PLUGIN_HIDE, // plugin flags
   init,                 // initialize
 
   term,                 // terminate. this pointer may be NULL.
