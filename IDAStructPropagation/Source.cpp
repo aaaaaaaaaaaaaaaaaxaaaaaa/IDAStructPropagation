@@ -12,6 +12,7 @@
 #include <set>
 #pragma warning(pop)
 #include "struct_processor.h"
+#include "starting_register.h"
 
 class process_action : public action_handler_t {
 	int (*func)(action_activation_ctx_t* ctx);
@@ -38,11 +39,17 @@ void propagate_callback(ea_t ea, uint8 op) {
 	op_stroff(insn, op, &selectedStruct->id, 1, 0);
 }
 int propagate_action(action_activation_ctx_t* ctx) {
-	msg("propagate_action\n");
+	starting_register highlighted_reg;
+	if (!highlighted_reg.has_register()) {
+		msg("register isn't highlighted\n");
+		return 1;
+	}
+
+
 	struc_t* struc = choose_struc("Select struct");
 	if (struc == NULL) { return true; }
 	selectedStruct = struc;
-	struct_processor processor(get_screen_ea(), &propagate_callback);
+	struct_processor processor(get_screen_ea(), &propagate_callback, highlighted_reg.get_register());
 	selectedStruct = 0;
 	return 1;
 }
@@ -50,11 +57,17 @@ process_action propagate_action_handler = process_action(&propagate_action);
 action_desc_t propagate_action_desc = ACTION_DESC_LITERAL("lyxica:propagateoffsets", "Auto struct propagate", &propagate_action_handler, "shift+t", NULL, NULL);
 
 // Shift + Y action
-void clear_callback(ea_t ea, uint8 op) {
+void clear_callback(ea_t ea, uint8 op) { 
 	clr_op_type(ea, op);
 }
 int clear_action(action_activation_ctx_t* ctx) {
-	struct_processor processor(get_screen_ea(), &clear_callback);
+	starting_register highlighted_reg;
+	if (!highlighted_reg.has_register()) {
+		msg("register isn't highlighted\n");
+		return 1;
+	}
+
+	struct_processor processor(get_screen_ea(), &clear_callback, highlighted_reg.get_register());
 	return 1;
 }
 process_action propagate_action_handler2 = process_action(&clear_action);

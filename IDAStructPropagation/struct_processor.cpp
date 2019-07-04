@@ -1,16 +1,4 @@
 #include "struct_processor.h"
-qstring get_reg_highlight() {
-	qstring highlight;
-	auto widget = get_current_widget();
-	uint32 flags;
-	get_highlight(&highlight, widget, &flags);
-	if ((flags & HIF_REGISTER) == 0) {
-		msg("highlight isn't a register name - got: %s - flags: %x\n", highlight.c_str(), flags);
-		throw "highlight isn't a register name";
-	}
-
-	return highlight;
-}
 
 /// Check an instruction and see if it causes a monitored register to be spoiled
 uint16 did_register_spoil(insn_t insn, std::set<uint16> monitored_registers) {
@@ -25,17 +13,6 @@ uint16 did_register_spoil(insn_t insn, std::set<uint16> monitored_registers) {
 	else {
 		return UINT16_MAX;
 	}
-}
-
-uint16 get_reg_num(qstring target_reg, insn_t insn) {
-	for (int i = 0; i < UA_MAXOP; i++) {
-		qstring operand_text;
-		op_t op = insn.ops[i];
-		print_operand(&operand_text, insn.ea, i);
-		if (regex_match(operand_text.c_str(), target_reg.c_str(), false) != 1) { continue; }
-		return op.reg;
-	}
-	throw "couldnt do struct_processor::get_reg_num()";
 }
 
 /// Check if an instruction is moving a structure pointer into another register. 
@@ -62,8 +39,7 @@ bool check_for_add(insn_t insn, std::set<uint16> set) {
 	return true;
 }
 
-struct_processor::struct_processor(ea_t starting_addr, void (*callback)(ea_t, uint8)) : callback(callback) {
-	auto target_reg = get_reg_highlight();
+struct_processor::struct_processor(ea_t starting_addr, void (*callback)(ea_t, uint8), uint16 starting_register) : callback(callback) {
 	this->func = get_func(starting_addr);
 	this->processed_lines = 0;
 
@@ -71,7 +47,7 @@ struct_processor::struct_processor(ea_t starting_addr, void (*callback)(ea_t, ui
 	decode_insn(&starting_insn, starting_addr);
 	std::set<uint16> monitored_registers;
 	std::set<ea_t> visited;
-	monitored_registers.insert(get_reg_num(target_reg, starting_insn));
+	monitored_registers.insert(starting_register);
 	this->process(starting_addr, monitored_registers, visited);
 }
 

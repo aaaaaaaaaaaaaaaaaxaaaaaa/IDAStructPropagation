@@ -16,7 +16,7 @@
 class struct_processor
 {
 public:
-	struct_processor(ea_t, void (*callback)(ea_t, uint8));
+	struct_processor(ea_t, void (*callback)(ea_t, uint8), uint16 starting_register);
 
 private:
 	func_t* func;
@@ -28,8 +28,6 @@ private:
 
 };
 
-qstring get_reg_highlight();
 uint16 did_register_spoil(insn_t, std::set<uint16>);
-uint16 get_reg_num(qstring, insn_t);
 uint16 check_for_struc_transfer(insn_t, std::set<uint16>);
 bool check_for_add(insn_t, std::set<uint16>);

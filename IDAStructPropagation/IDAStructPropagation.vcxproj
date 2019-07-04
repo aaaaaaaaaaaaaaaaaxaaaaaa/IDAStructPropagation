@@ -164,9 +164,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp" />
+    <ClCompile Include="starting_register.cpp" />
     <ClCompile Include="struct_processor.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="starting_register.h" />
     <ClInclude Include="struct_processor.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
