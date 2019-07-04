@@ -49,6 +49,17 @@ int propagate_action(action_activation_ctx_t* ctx) {
 process_action propagate_action_handler = process_action(&propagate_action);
 action_desc_t propagate_action_desc = ACTION_DESC_LITERAL("lyxica:propagateoffsets", "Auto struct propagate", &propagate_action_handler, "shift+t", NULL, NULL);
 
+// Shift + Y action
+void clear_callback(ea_t ea, uint8 op) {
+	clr_op_type(ea, op);
+}
+int clear_action(action_activation_ctx_t* ctx) {
+	struct_processor processor(get_screen_ea(), &clear_callback);
+	return 1;
+}
+process_action propagate_action_handler2 = process_action(&clear_action);
+action_desc_t propagate_action2_desc = ACTION_DESC_LITERAL("lyxica:propagateoffsetclear", "Clear offsets from register", &propagate_action_handler2, "shift+y", NULL, NULL);
+
 int idaapi init(void)
 {
 	if (stricmp(inf.procname, "metapc") != 0) {
@@ -56,11 +67,13 @@ int idaapi init(void)
 	}
 
 	register_action(propagate_action_desc);
+	register_action(propagate_action2_desc);
 	return PLUGIN_KEEP;
 }
 void idaapi term(void)
 {
 	unregister_action("lyxica:propagateoffsets");
+	unregister_action("lyxica:propagateoffsetclear");
 }
 bool idaapi run(size_t arg)
 {
