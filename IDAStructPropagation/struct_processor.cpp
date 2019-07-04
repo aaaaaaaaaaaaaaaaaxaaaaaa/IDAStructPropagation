@@ -1,19 +1,5 @@
 #include "struct_processor.h"
-
-struct_processor::struct_processor(ea_t starting_addr, struc_t* struc) : starting_addr(starting_addr), struc(struc) {
-	this->target_reg = get_reg_highlight();
-	this->func = get_func(starting_addr);
-	this->processed_lines = 0;
-
-	insn_t starting_insn;
-	decode_insn(&starting_insn, starting_addr);
-	std::set<uint16> monitored_registers;
-	std::set<ea_t> visited;
-	monitored_registers.insert(this->get_reg_num(this->target_reg, starting_insn));
-	this->process(starting_addr, monitored_registers, visited);
-}
-
-qstring struct_processor::get_reg_highlight() {
+qstring get_reg_highlight() {
 	qstring highlight;
 	auto widget = get_current_widget();
 	uint32 flags;
@@ -27,7 +13,7 @@ qstring struct_processor::get_reg_highlight() {
 }
 
 /// Check an instruction and see if it causes a monitored register to be spoiled
-uint16 struct_processor::did_register_spoil(insn_t insn, std::set<uint16> monitored_registers) {
+uint16 did_register_spoil(insn_t insn, std::set<uint16> monitored_registers) {
 	// Assumptions:
 	// 1. A register will only be spoiled happen when that register is the first operand as an o_reg.
 	// 2. Instructions that spoil registers almost always have a 2nd operand. 
@@ -41,7 +27,7 @@ uint16 struct_processor::did_register_spoil(insn_t insn, std::set<uint16> monito
 	}
 }
 
-uint16 struct_processor::get_reg_num(qstring target_reg, insn_t insn) {
+uint16 get_reg_num(qstring target_reg, insn_t insn) {
 	for (int i = 0; i < UA_MAXOP; i++) {
 		qstring operand_text;
 		op_t op = insn.ops[i];
@@ -52,14 +38,9 @@ uint16 struct_processor::get_reg_num(qstring target_reg, insn_t insn) {
 	throw "couldnt do struct_processor::get_reg_num()";
 }
 
-ea_t struct_processor::branch_target(insn_t insn) {
-	ea_t branch_target = get_first_fcref_from(insn.ea);
-	return this->func->contains(branch_target) ? branch_target : BADADDR;
-}
-
 /// Check if an instruction is moving a structure pointer into another register. 
 /// Return the new register if it is, UINT16_MAX otherwise.
-uint16 struct_processor::check_for_struc_transfer(insn_t insn, std::set<uint16> set) {
+uint16 check_for_struc_transfer(insn_t insn, std::set<uint16> set) {
 	// Assumptions:
 	// 1. ops[0] is destination, ops[1] is the source
 	// 2. Horizontal transfer of a structure pointer can only happen if both operands are o_reg
@@ -71,13 +52,32 @@ uint16 struct_processor::check_for_struc_transfer(insn_t insn, std::set<uint16> 
 	return insn.ops[0].reg;
 }
 
-bool struct_processor::check_for_add(insn_t insn, std::set<uint16> set) {
+
+bool check_for_add(insn_t insn, std::set<uint16> set) {
 	qstring mnem;
 	print_insn_mnem(&mnem, insn.ea);
 	if (mnem != "add") { return false; }
 	if (set.find(insn.ops[0].reg) == set.end()) { return false; }
 
 	return true;
+}
+
+struct_processor::struct_processor(ea_t starting_addr, void (*callback)(ea_t, uint8)) : callback(callback) {
+	auto target_reg = get_reg_highlight();
+	this->func = get_func(starting_addr);
+	this->processed_lines = 0;
+
+	insn_t starting_insn;
+	decode_insn(&starting_insn, starting_addr);
+	std::set<uint16> monitored_registers;
+	std::set<ea_t> visited;
+	monitored_registers.insert(get_reg_num(target_reg, starting_insn));
+	this->process(starting_addr, monitored_registers, visited);
+}
+
+ea_t struct_processor::branch_target(insn_t insn) {
+	ea_t branch_target = get_first_fcref_from(insn.ea);
+	return this->func->contains(branch_target) ? branch_target : BADADDR;
 }
 
 void struct_processor::process(ea_t addr, std::set<uint16> monitored_registers, std::set<ea_t> visited) {
@@ -110,13 +110,13 @@ void struct_processor::process(ea_t addr, std::set<uint16> monitored_registers, 
 			if (op.type == o_displ || op.type == o_phrase) {
 				uint16 reg = op.specflag2 ? sib_base(insn, op) : op.reg;
 				if (monitored_registers.find(reg) != monitored_registers.end()) {
-					op_stroff(insn, i, &this->struc->id, 1, 0);
+					this->callback(insn.ea, i);
 				}
 			}
 		}
 
 		if (check_for_add(insn, monitored_registers)) {
-			op_stroff(insn, 1, &this->struc->id, 1, 0);
+			this->callback(insn.ea, 1);
 		}
 
 		if (!bypass_spoil) {
@@ -126,7 +126,7 @@ void struct_processor::process(ea_t addr, std::set<uint16> monitored_registers, 
 				}
 				return;
 			}
-			uint16 spoiled_register = this->did_register_spoil(insn, monitored_registers);
+			uint16 spoiled_register = did_register_spoil(insn, monitored_registers);
 			if ((spoiled_register != UINT16_MAX) && this->processed_lines > 1) {
 				monitored_registers.erase(spoiled_register);
 			}

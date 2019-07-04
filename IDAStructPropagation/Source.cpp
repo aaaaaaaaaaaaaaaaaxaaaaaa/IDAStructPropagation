@@ -13,6 +13,13 @@
 #pragma warning(pop)
 #include "struct_processor.h"
 
+struc_t* selectedStruct = 0;
+void propagate_offsets(ea_t ea, uint8 op) {
+	insn_t insn;
+	decode_insn(&insn, ea);
+	op_stroff(insn, op, &selectedStruct->id, 1, 0);
+}
+
 int idaapi init(void)
 {
 	if (stricmp(inf.procname, "metapc") != 0) {
@@ -20,20 +27,18 @@ int idaapi init(void)
 	}
 	return PLUGIN_OK;
 }
-
 void idaapi term(void)
 {
 }
-
-
 bool idaapi run(size_t arg)
 {
 	struc_t* struc = choose_struc("Select struct");
 	if (struc == NULL) { return true; }
-	struct_processor processor(get_screen_ea(), struc);
+	selectedStruct = struc;
+	struct_processor processor(get_screen_ea(), &propagate_offsets);
+	selectedStruct = 0;
 	return true;
 }	
-
 //--------------------------------------------------------------------------
 static const char comment[] = "Auto struct propagate";
 static const char help[] = "";
