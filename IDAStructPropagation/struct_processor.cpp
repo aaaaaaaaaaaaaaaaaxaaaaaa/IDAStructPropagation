@@ -1,18 +1,13 @@
 #include "struct_processor.h"
 
 /// Check an instruction and see if it causes a monitored register to be spoiled
-uint16 did_register_spoil(insn_t insn, std::set<uint16> monitored_registers) {
+uint16 did_register_spoil(insn_t insn, std::set<uint16> registers) {
 	// Assumptions:
 	// 1. A register will only be spoiled happen when that register is the first operand as an o_reg.
-	// 2. Instructions that spoil registers almost always have a 2nd operand. 
-	if (insn.ops[1].type == o_void) { return UINT16_MAX; } // Fails assumption 2
 	if (insn.ops[0].type != o_reg) { return UINT16_MAX; } // Fails assumption 1
-	if (monitored_registers.find(insn.ops[0].reg) != monitored_registers.end()) {
-		return insn.ops[0].reg;
-	}
-	else {
-		return UINT16_MAX;
-	}
+	if (registers.find(insn.ops[0].reg) == registers.end()) { return UINT16_MAX; }
+	
+	auto flags = insn.get_canon_feature();
 }
 
 /// Check if an instruction is moving a structure pointer into another register. 
