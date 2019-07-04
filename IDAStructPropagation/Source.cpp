@@ -39,6 +39,10 @@ void propagate_callback(ea_t ea, uint8 op) {
 	op_stroff(insn, op, &selectedStruct->id, 1, 0);
 }
 int propagate_action(action_activation_ctx_t* ctx) {
+	auto widget = get_current_widget();
+	auto type = get_widget_type(widget);
+	if (type != BWN_DISASM) { return 1; }
+
 	starting_register highlighted_reg;
 	if (!highlighted_reg.has_register()) {
 		msg("register isn't highlighted\n");
@@ -61,6 +65,10 @@ void clear_callback(ea_t ea, uint8 op) {
 	clr_op_type(ea, op);
 }
 int clear_action(action_activation_ctx_t* ctx) {
+	auto widget = get_current_widget();
+	auto type = get_widget_type(widget);
+	if (type != BWN_DISASM) { return 1; }
+
 	starting_register highlighted_reg;
 	if (!highlighted_reg.has_register()) {
 		msg("register isn't highlighted\n");
