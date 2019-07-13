@@ -8,6 +8,10 @@ uint16 did_register_spoil(insn_t insn, std::set<uint16> registers) {
 	if (registers.find(insn.ops[0].reg) == registers.end()) { return UINT16_MAX; }
 	
 	auto flags = insn.get_canon_feature();
+	if (flags && CF_CHG1) {
+		return insn.ops[0].reg;
+	}
+	return UINT16_MAX;
 }
 
 /// Check if an instruction is moving a structure pointer into another register. 
@@ -45,7 +49,6 @@ struct_processor::struct_processor(ea_t starting_addr, void (*callback)(ea_t, ui
 	monitored_registers.insert(starting_register);
 	this->process(starting_addr, monitored_registers);
 }
-
 ea_t struct_processor::branch_target(insn_t insn) {
 	ea_t branch_target = get_first_fcref_from(insn.ea);
 	return this->func->contains(branch_target) ? branch_target : BADADDR;
@@ -55,7 +58,6 @@ void struct_processor::process(ea_t addr, std::set<uint16> monitored_registers) 
 	insn_t insn;
 	ea_t decoded_addr;
 	decoded_addr = decode_insn(&insn, addr);
-
 	while (func_contains(this->func, insn.ea) && monitored_registers.size() > 0) {
 		if (visited.find(insn.ea) != visited.end()) { return; }
 		visited.insert(insn.ea);
