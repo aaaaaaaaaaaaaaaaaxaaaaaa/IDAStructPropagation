@@ -43,7 +43,7 @@ struct_processor::struct_processor(ea_t starting_addr, void (*callback)(ea_t, ui
 	std::set<uint16> monitored_registers;
 	std::set<ea_t> visited;
 	monitored_registers.insert(starting_register);
-	this->process(starting_addr, monitored_registers, visited);
+	this->process(starting_addr, monitored_registers);
 }
 
 ea_t struct_processor::branch_target(insn_t insn) {
@@ -51,7 +51,7 @@ ea_t struct_processor::branch_target(insn_t insn) {
 	return this->func->contains(branch_target) ? branch_target : BADADDR;
 }
 
-void struct_processor::process(ea_t addr, std::set<uint16> monitored_registers, std::set<ea_t> visited) {
+void struct_processor::process(ea_t addr, std::set<uint16> monitored_registers) {
 	insn_t insn;
 	ea_t decoded_addr;
 	decoded_addr = decode_insn(&insn, addr);
@@ -69,9 +69,9 @@ void struct_processor::process(ea_t addr, std::set<uint16> monitored_registers, 
 		}
 
 		if (branch_target(insn) != BADADDR) {
-			this->process(branch_target(insn), monitored_registers, visited); // Insn is a Jcc type, process TRUE branch
+			this->process(branch_target(insn), monitored_registers); // Insn is a Jcc type, process TRUE branch
 			decoded_addr = decode_insn(&insn, insn.ea + insn.size);
-			this->process(insn.ea, monitored_registers, visited); // process FALSE branch
+			this->process(insn.ea, monitored_registers); // process FALSE branch
 			return;
 		}
 
@@ -93,7 +93,7 @@ void struct_processor::process(ea_t addr, std::set<uint16> monitored_registers, 
 		if (!bypass_spoil) {
 			if (insn.get_canon_feature() & CF_STOP) {
 				if (branch_target(insn) != BADADDR) {
-					this->process(branch_target(insn), monitored_registers, visited);
+					this->process(branch_target(insn), monitored_registers);
 				}
 				return;
 			}

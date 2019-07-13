@@ -22,8 +22,9 @@ private:
 	func_t* func;
 	uint processed_lines;
 	void (*callback)(ea_t, uint8);
+	std::set<ea_t> visited;
 
-	void process(ea_t addr, std::set<uint16>, std::set<ea_t>);
+	void process(ea_t addr, std::set<uint16>);
 	ea_t branch_target(insn_t);
 
 };
