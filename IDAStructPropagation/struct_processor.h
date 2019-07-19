@@ -25,7 +25,7 @@ private:
 	std::set<ea_t> visited;
 
 	void process(ea_t addr, std::set<uint16>);
-	ea_t branch_target(insn_t);
+	qvector<ea_t> branch_target(insn_t);
 
 };
 

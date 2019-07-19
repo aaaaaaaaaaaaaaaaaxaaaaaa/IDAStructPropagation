@@ -49,9 +49,12 @@ struct_processor::struct_processor(ea_t starting_addr, void (*callback)(ea_t, ui
 	monitored_registers.insert(starting_register);
 	this->process(starting_addr, monitored_registers);
 }
-ea_t struct_processor::branch_target(insn_t insn) {
-	ea_t branch_target = get_first_fcref_from(insn.ea);
-	return this->func->contains(branch_target) ? branch_target : BADADDR;
+qvector<ea_t> struct_processor::branch_target(insn_t insn) {
+	qvector<ea_t> branch_targets;
+	for (auto target = get_first_fcref_from(insn.ea); target != BADADDR; target = get_next_fcref_from(insn.ea, target)) {
+		branch_targets.push_back(target);
+	}
+	return branch_targets;
 }
 
 void struct_processor::process(ea_t addr, std::set<uint16> monitored_registers) {
@@ -64,19 +67,24 @@ void struct_processor::process(ea_t addr, std::set<uint16> monitored_registers) 
 		this->processed_lines++;
 		bool bypass_spoil = false;
 
+		// Detect if a monitored register has copied its value into another register, and add that new register to the monitor list
 		uint16 new_register = check_for_struc_transfer(insn, monitored_registers);
 		if (new_register != UINT16_MAX) {
 			monitored_registers.insert(new_register);
 			bypass_spoil = true;
 		}
 
-		if (branch_target(insn) != BADADDR) {
-			this->process(branch_target(insn), monitored_registers); // Insn is a Jcc type, process TRUE branch
-			decoded_addr = decode_insn(&insn, insn.ea + insn.size);
-			this->process(insn.ea, monitored_registers); // process FALSE branch
-			return;
+		// Detect any jump targets and recursively run them
+		auto targets = branch_target(insn);
+		if (!targets.empty()) {
+			for (int i = 0; i < targets.size(); i++) {
+				this->process(targets[i], monitored_registers); // Insn is a Jcc type, process TRUE branch
+				decoded_addr = decode_insn(&insn, insn.ea + insn.size);
+				this->process(insn.ea, monitored_registers); // process FALSE branch
+			}
 		}
 
+		// Apply structure offsets to any monitored registers
 		for (int i = 0; i < UA_MAXOP; i++) {
 			op_t op = insn.ops[i];
 			if (op.type == o_void) { break; }
@@ -88,14 +96,17 @@ void struct_processor::process(ea_t addr, std::set<uint16> monitored_registers) 
 			}
 		}
 
+		// Handle structure offsets that are set using the add op
 		if (check_for_add(insn, monitored_registers)) {
 			this->callback(insn.ea, 1);
 		}
 
+		// Check if a monitored register has had an outside value moved into it
 		if (!bypass_spoil) {
 			if (insn.get_canon_feature() & CF_STOP) {
-				if (branch_target(insn) != BADADDR) {
-					this->process(branch_target(insn), monitored_registers);
+				auto targets = branch_target(insn);
+				for (int i = 0; i < targets.size(); i++) {
+					this->process(targets[i], monitored_registers);
 				}
 				return;
 			}
