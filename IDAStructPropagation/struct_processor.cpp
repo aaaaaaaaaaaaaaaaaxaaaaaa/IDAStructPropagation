@@ -8,7 +8,7 @@ uint16 did_register_spoil(insn_t insn, std::set<uint16> registers) {
 	if (registers.find(insn.ops[0].reg) == registers.end()) { return UINT16_MAX; }
 	
 	auto flags = insn.get_canon_feature();
-	if (flags && CF_CHG1) {
+	if (flags & CF_CHG1) {
 		return insn.ops[0].reg;
 	}
 	return UINT16_MAX;
